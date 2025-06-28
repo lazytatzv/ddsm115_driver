@@ -1,0 +1,47 @@
+# Use Ubuntu 22.04 with ROS2 Humble
+FROM ros:humble-desktop-full
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install additional dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    libboost-all-dev \
+    pkg-config \
+    python3-colcon-common-extensions \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace
+WORKDIR /ros2_ws
+
+# Copy source code
+COPY . /ros2_ws/src/ddsm115_driver/
+
+# Build standalone library first
+WORKDIR /ros2_ws/src/ddsm115_driver
+RUN mkdir build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig
+
+# Copy ROS2 wrapper
+RUN cp -r ros2_wrapper /ros2_ws/src/ddsm115_ros2
+
+# Build ROS2 workspace
+WORKDIR /ros2_ws
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build"
+
+# Set up environment
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+RUN echo "source /ros2_ws/install/setup.bash" >> ~/.bashrc
+
+# Entry point
+WORKDIR /ros2_ws
+CMD ["/bin/bash"]
+
+# Labels
+LABEL org.opencontainers.image.title="DDSM115 Driver with ROS2"
+LABEL org.opencontainers.image.description="DDSM115 servo motor driver with ROS2 Humble integration"

@@ -1,0 +1,141 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide details about your request.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: A brief summary of the feature you'd like to see
+      placeholder: Briefly describe the feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation/Use Case
+      description: Why would this feature be useful? What problem does it solve?
+      placeholder: Describe the use case and motivation...
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Detailed Description
+      description: Provide a detailed description of the feature
+      placeholder: |
+        - What should the feature do?
+        - How should it work?
+        - What are the expected inputs/outputs?
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Usage Examples
+      description: Show how the feature would be used
+      render: cpp
+      placeholder: |
+        // Example of how the feature would be used
+        motor.new_feature_function(parameters);
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What category does this feature fall into?
+      options:
+        - Core Driver API
+        - Communication Protocol
+        - Error Handling
+        - ROS2 Integration
+        - Examples/Documentation
+        - Build System
+        - Performance
+        - Hardware Support
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my use case
+        - Critical - Blocking my project
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: Describe any alternatives or current workarounds...
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Ideas
+      description: Do you have any ideas about how this could be implemented?
+      placeholder: |
+        - API design suggestions
+        - Implementation approach
+        - Potential challenges
+
+  - type: dropdown
+    id: compatibility
+    attributes:
+      label: Compatibility Impact
+      description: Would this feature require breaking changes?
+      options:
+        - No breaking changes
+        - Minor breaking changes (acceptable)
+        - Major breaking changes (new major version)
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information
+      placeholder: Add any other context here...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Are you willing to help implement this feature?
+      options:
+        - label: I am willing to implement this feature myself
+        - label: I can help with testing the implementation
+        - label: I can help with documentation
+        - label: I can provide hardware for testing
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      description: Please confirm you have done the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have provided a clear use case and motivation
+          required: true
+        - label: This feature would benefit other users, not just my specific case
+          required: true

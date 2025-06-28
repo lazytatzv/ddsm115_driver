@@ -1,0 +1,6 @@
+device_path: "/dev/ttyUSB0"
+motor_id: 1
+motor_mode: "velocity"  # current, velocity, position
+status_publish_rate: 10.0
+auto_polling: true
+polling_interval_ms: 100

@@ -1,0 +1,202 @@
+name: CI/CD Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ubuntu-version: [20.04, 22.04, 24.04]
+        compiler: [gcc, clang]
+        build-type: [Debug, Release]
+        exclude:
+          # Reduce matrix size for faster CI
+          - ubuntu-version: 20.04
+            build-type: Debug
+          - ubuntu-version: 24.04
+            build-type: Debug
+            
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up compiler
+      run: |
+        if [ "${{ matrix.compiler }}" = "clang" ]; then
+          sudo apt-get update
+          sudo apt-get install -y clang
+          echo "CC=clang" >> $GITHUB_ENV
+          echo "CXX=clang++" >> $GITHUB_ENV
+        else
+          echo "CC=gcc" >> $GITHUB_ENV
+          echo "CXX=g++" >> $GITHUB_ENV
+        fi
+        
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libboost-all-dev \
+          pkg-config
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build-type }} \
+          -DCMAKE_C_COMPILER=$CC \
+          -DCMAKE_CXX_COMPILER=$CXX
+    
+    - name: Build
+      run: |
+        cd build
+        make -j$(nproc)
+    
+    - name: Test examples compile
+      run: |
+        cd build/examples
+        ls -la
+        file basic_example
+        file velocity_control_example
+        file position_control_example
+        file multi_motor_example
+    
+    - name: Run functionality test
+      run: |
+        cd build
+        # Compile and run the functionality test
+        $CXX -std=c++17 -I../include/ ../test_functionality.cpp ../src/ddsm115_driver.cpp -lboost_system -pthread -o test_functionality_ci
+        ./test_functionality_ci
+
+  build-ros2:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ros-distro: [humble, iron]
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up ROS2
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl gnupg lsb-release
+        
+        # Add ROS2 repository
+        curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+        
+        sudo apt-get update
+        sudo apt-get install -y \
+          ros-${{ matrix.ros-distro }}-desktop \
+          ros-${{ matrix.ros-distro }}-ament-cmake \
+          python3-colcon-common-extensions
+    
+    - name: Build standalone library first
+      run: |
+        mkdir -p build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        make -j$(nproc)
+        sudo make install
+        sudo ldconfig
+    
+    - name: Build ROS2 wrapper
+      run: |
+        source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+        mkdir -p ros2_ws/src
+        cp -r ros2_wrapper ros2_ws/src/ddsm115_ros2
+        cd ros2_ws
+        colcon build --packages-select ddsm115_ros2
+        
+    - name: Test ROS2 package
+      run: |
+        source /opt/ros/${{ matrix.ros-distro }}/setup.bash
+        cd ros2_ws
+        source install/setup.bash
+        ros2 pkg list | grep ddsm115_ros2
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          cppcheck \
+          clang-format \
+          clang-tidy
+    
+    - name: Run cppcheck
+      run: |
+        cppcheck --enable=all --error-exitcode=1 \
+          --suppress=missingIncludeSystem \
+          --suppress=unusedFunction \
+          --inline-suppr \
+          src/ include/
+    
+    - name: Check code formatting
+      run: |
+        find src include examples -name "*.cpp" -o -name "*.hpp" | \
+        xargs clang-format --dry-run --Werror
+
+  documentation:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check documentation files
+      run: |
+        # Check that all required documentation files exist
+        test -f README.md
+        test -f LICENSE
+        test -f CHANGELOG.md
+        test -f CONTRIBUTING.md
+        test -f QUICK_REFERENCE.md
+        
+        # Check that README has minimum required sections
+        grep -q "# DDSM115 Servo Motor Driver Library" README.md
+        grep -q "## Installation" README.md
+        grep -q "## Usage" README.md
+        grep -q "## API Reference" README.md
+        
+    - name: Validate example code in README
+      run: |
+        # Extract and validate C++ code blocks from README
+        # This is a basic check - could be enhanced with actual compilation
+        grep -A 10 '```cpp' README.md | grep -E '(include|ddsm115::)' > /dev/null
+
+  release-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Validate version consistency
+      run: |
+        # Extract version from tag
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "Release version: $VERSION"
+        
+        # Check that version appears in CHANGELOG.md
+        grep -q "\[$VERSION\]" CHANGELOG.md || {
+          echo "Version $VERSION not found in CHANGELOG.md"
+          exit 1
+        }
+        
+        # Check that version appears in CMakeLists.txt (if versioned)
+        # This would need to be implemented based on how you version your CMake project
+        
+        echo "Version consistency check passed"

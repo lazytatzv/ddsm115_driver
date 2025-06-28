@@ -1,0 +1,35 @@
+front_left_motor:
+  ros__parameters:
+    device_path: "/dev/ttyUSB0"
+    motor_id: 1
+    motor_mode: "velocity"
+    status_publish_rate: 20.0
+    auto_polling: true
+    polling_interval_ms: 50
+
+front_right_motor:
+  ros__parameters:
+    device_path: "/dev/ttyUSB0"
+    motor_id: 2
+    motor_mode: "velocity"
+    status_publish_rate: 20.0
+    auto_polling: true
+    polling_interval_ms: 60
+
+rear_left_motor:
+  ros__parameters:
+    device_path: "/dev/ttyUSB0"
+    motor_id: 3
+    motor_mode: "velocity"
+    status_publish_rate: 20.0
+    auto_polling: true
+    polling_interval_ms: 70
+
+rear_right_motor:
+  ros__parameters:
+    device_path: "/dev/ttyUSB0"
+    motor_id: 4
+    motor_mode: "velocity"
+    status_publish_rate: 20.0
+    auto_polling: true
+    polling_interval_ms: 80
