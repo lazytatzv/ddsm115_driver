@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Usage &#8212; ddsm115_ros2_driver 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=8d563738"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading">¶</a></h1>
+<section id="hardware-connection">
+<h2>Hardware Connection<a class="headerlink" href="#hardware-connection" title="Link to this heading">¶</a></h2>
+<ol class="arabic simple">
+<li><p>Connect the motor signal wires to your USB-to-RS485 transceiver:
+* DDSM115 <code class="docutils literal notranslate"><span class="pre">DATA+</span></code> (Yellow) ➔ RS485 <code class="docutils literal notranslate"><span class="pre">A+</span></code>
+* DDSM115 <code class="docutils literal notranslate"><span class="pre">DATA-</span></code> (Blue) ➔ RS485 <code class="docutils literal notranslate"><span class="pre">B-</span></code>
+* DDSM115 <code class="docutils literal notranslate"><span class="pre">GND</span></code> (Black) ➔ RS485 <code class="docutils literal notranslate"><span class="pre">GND</span></code> (highly recommended to connect signal grounds to reduce serial noise)</p></li>
+<li><p>Connect a DC power supply (rated 12V to 24V, rated 18V DC is standard, 6A minimum recommended).</p></li>
+</ol>
+</section>
+<section id="motor-id-configuration">
+<h2>Motor ID Configuration<a class="headerlink" href="#motor-id-configuration" title="Link to this heading">¶</a></h2>
+<p>When daisy-chaining multiple motors on the same RS485 bus, each motor must be configured with a unique ID (1 to 253).</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>When assigning a motor ID, ensure only one motor is connected to the RS485 bus. Running the command with multiple connected motors will write the same ID to all of them.</p>
+</div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: Write ID &quot;2&quot; to the motor connected to /dev/ttyUSB0</span>
+ros2<span class="w"> </span>run<span class="w"> </span>ddsm115_ros2_driver<span class="w"> </span>set_motor_id.py<span class="w"> </span>--ros-args<span class="w"> </span>-p<span class="w"> </span>serial_port:<span class="o">=</span>/dev/ttyUSB0<span class="w"> </span>-p<span class="w"> </span>id:<span class="o">=</span><span class="m">2</span>
+
+<span class="c1"># Once successfully written, power cycle (reboot) the motor to apply the changes.</span>
+</pre></div>
+</div>
+</section>
+<section id="standalone-ros-2-node-mode">
+<h2>Standalone ROS 2 Node Mode<a class="headerlink" href="#standalone-ros-2-node-mode" title="Link to this heading">¶</a></h2>
+<p>Used to quickly control and monitor motors via raw topic communication.</p>
+<ol class="arabic">
+<li><p>Launch the Node:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>ddsm115_ros2_driver<span class="w"> </span>ddsm115_node.launch.py
+</pre></div>
+</div>
+</li>
+<li><p>Published Topics:
+* <code class="docutils literal notranslate"><span class="pre">/motor_[ID]/status</span></code> (ddsm115_ros2_driver/msg/Ddsm115Status): Measured winding current, velocity, position, winding temperature, and raw diagnostic error flags.
+* <code class="docutils literal notranslate"><span class="pre">/diagnostics</span></code> (diagnostic_msgs/msg/DiagnosticArray): Aggregated system health data containing bus statistics, watchdog status, and temperature faults.</p></li>
+<li><p>Subscribed Topics:
+* <code class="docutils literal notranslate"><span class="pre">/motor_[ID]/command</span></code> (ddsm115_ros2_driver/msg/Ddsm115Command): Target command (mode: 1 for CURRENT, 2 for VELOCITY, 3 for POSITION, value, brake_mode).</p></li>
+</ol>
+</section>
+<section id="ros2-control-hardware-interface-mode">
+<h2>ros2_control Hardware Interface Mode<a class="headerlink" href="#ros2-control-hardware-interface-mode" title="Link to this heading">¶</a></h2>
+<p>Recommended mode for mobile robots (e.g. differential drive) integrating with <code class="docutils literal notranslate"><span class="pre">diff_drive_controller</span></code> and Nav2.</p>
+<ol class="arabic">
+<li><p>URDF (xacro) Configuration:</p>
+<p>Add the hardware interface definition to your robot description:</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;ros2_control</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;DDSM115HardwareInterface&quot;</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;system&quot;</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nt">&lt;hardware&gt;</span>
+<span class="w">    </span><span class="nt">&lt;plugin&gt;</span>ddsm115_ros2_driver/DDSM115SystemHardware<span class="nt">&lt;/plugin&gt;</span>
+<span class="w">    </span><span class="nt">&lt;param</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;usb_path&quot;</span><span class="nt">&gt;</span>/dev/ttyUSB0<span class="nt">&lt;/param&gt;</span>
+<span class="w">    </span><span class="nt">&lt;param</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;serial_baud&quot;</span><span class="nt">&gt;</span>115200<span class="nt">&lt;/param&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/hardware&gt;</span>
+<span class="w">  </span><span class="nt">&lt;joint</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;left_wheel_joint&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;command_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;velocity&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;state_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;position&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;state_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;velocity&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;state_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;effort&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;param</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;motor_id&quot;</span><span class="nt">&gt;</span>1<span class="nt">&lt;/param&gt;</span>
+<span class="w">    </span><span class="nt">&lt;param</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;invert_direction&quot;</span><span class="nt">&gt;</span>false<span class="nt">&lt;/param&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/joint&gt;</span>
+<span class="w">  </span><span class="nt">&lt;joint</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;right_wheel_joint&quot;</span><span class="nt">&gt;</span>
+<span class="w">    </span><span class="nt">&lt;command_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;velocity&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;state_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;position&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;state_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;velocity&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;state_interface</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;effort&quot;</span><span class="nt">/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;param</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;motor_id&quot;</span><span class="nt">&gt;</span>2<span class="nt">&lt;/param&gt;</span>
+<span class="w">    </span><span class="nt">&lt;param</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;invert_direction&quot;</span><span class="nt">&gt;</span>true<span class="nt">&lt;/param&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/joint&gt;</span>
+<span class="nt">&lt;/ros2_control&gt;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Running the Controller Demo:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ros2<span class="w"> </span>launch<span class="w"> </span>ddsm115_ros2_driver<span class="w"> </span>ddsm115_control.launch.py<span class="w"> </span>motor_id_left:<span class="o">=</span><span class="m">1</span><span class="w"> </span>motor_id_right:<span class="o">=</span><span class="m">2</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ddsm115_ros2_driver</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hardware-connection">Hardware Connection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#motor-id-configuration">Motor ID Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#standalone-ros-2-node-mode">Standalone ROS 2 Node Mode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ros2-control-hardware-interface-mode">ros2_control Hardware Interface Mode</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Tatsukiyano.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.1.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/usage.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
