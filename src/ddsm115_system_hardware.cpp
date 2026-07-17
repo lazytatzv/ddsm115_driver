@@ -218,6 +218,12 @@ void DDSM115SystemHardware::motor_feedback_callback(const MotorFeedback & feedba
     return;
   }
 
+  if (feedback.is_temperature_packet)
+  {
+    // Ignore temperature query packets for odometry/control tracking
+    return;
+  }
+
   size_t idx = id_to_index_[feedback.motor_id];
   std::lock_guard<std::mutex> lock(state_mutex_);
   

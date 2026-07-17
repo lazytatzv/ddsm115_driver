@@ -141,27 +141,38 @@ void DDSM115DriverNode::motor_feedback_callback(const MotorFeedback & feedback)
 {
   total_rx_packets_++;
 
+  std::lock_guard<std::mutex> lock(state_mutex_);
+  if (motor_states_.count(feedback.motor_id) == 0) return;
+
+  auto & state = motor_states_[feedback.motor_id];
+
   ddsm115_ros2_driver::msg::Ddsm115Status status_msg;
   status_msg.current = feedback.current;
   status_msg.velocity = feedback.velocity;
-  status_msg.position = feedback.position;
   status_msg.error_code = feedback.error_code;
 
-  // Publish immediately to minimize latency
+  if (feedback.is_temperature_packet)
+  {
+    // Use last stored high-res position if we have one
+    status_msg.position = state.has_status ? state.last_status.position : feedback.position;
+    status_msg.winding_temperature = feedback.winding_temperature;
+  }
+  else
+  {
+    // Use high-res position from 0x64 packet
+    status_msg.position = feedback.position;
+    // Keep last known winding temperature
+    status_msg.winding_temperature = state.has_status ? state.last_status.winding_temperature : 0.0;
+  }
+
+  // Publish status
   if (status_pubs_.count(feedback.motor_id) > 0)
   {
     status_pubs_[feedback.motor_id]->publish(status_msg);
   }
 
-  // Update internal states
-  {
-    std::lock_guard<std::mutex> lock(state_mutex_);
-    if (motor_states_.count(feedback.motor_id) > 0)
-    {
-      motor_states_[feedback.motor_id].last_status = status_msg;
-      motor_states_[feedback.motor_id].has_status = true;
-    }
-  }
+  state.last_status = status_msg;
+  state.has_status = true;
 }
 
 void DDSM115DriverNode::topic_callback(const ddsm115_ros2_driver::msg::Ddsm115Command::SharedPtr msg, uint8_t motor_id)
@@ -177,6 +188,9 @@ void DDSM115DriverNode::topic_callback(const ddsm115_ros2_driver::msg::Ddsm115Co
 
 void DDSM115DriverNode::control_timer_callback()
 {
+  control_cycle_count_++;
+  bool request_temp = (control_cycle_count_ % 20 == 0);
+
   // Send commands to motors sequentially to prevent RS485 collision
   for (int64_t motor_id : motor_ids_)
   {
@@ -194,7 +208,12 @@ void DDSM115DriverNode::control_timer_callback()
       }
     }
 
-    if (is_timed_out)
+    if (request_temp)
+    {
+      // Periodically query the winding temperature
+      driver_client_->send_feedback_query(id);
+    }
+    else if (is_timed_out)
     {
       // Safety stop if command timed out or not yet commanded
       driver_client_->send_velocity_command(id, 0.0, 0, true);
@@ -310,6 +329,7 @@ void DDSM115DriverNode::produce_diagnostics(diagnostic_updater::DiagnosticStatus
         stat.add(key_prefix + " Status Feedback Current (A)", state.last_status.current);
         stat.add(key_prefix + " Status Feedback Velocity (RPM)", state.last_status.velocity);
         stat.add(key_prefix + " Status Feedback Position (Deg)", state.last_status.position);
+        stat.add(key_prefix + " Status Feedback Winding Temperature (C)", state.last_status.winding_temperature);
         stat.add(key_prefix + " Status Error Code", static_cast<int>(state.last_status.error_code));
       }
       else

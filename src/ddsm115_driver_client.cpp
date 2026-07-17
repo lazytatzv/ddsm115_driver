@@ -34,7 +34,10 @@ namespace ddsm115_ros2_driver
   }
 
   DDSM115DriverClient::DDSM115DriverClient(FeedbackCallback feedback_callback, LogCallback log_callback)
-      : serial_port_(io_context_), buffer_(), reading_(false), feedback_callback_(feedback_callback), log_callback_(log_callback) {}
+      : serial_port_(io_context_), buffer_(), reading_(false), feedback_callback_(feedback_callback), log_callback_(log_callback)
+  {
+    last_sent_command_type_.fill(0x64);
+  }
 
   DDSM115DriverClient::~DDSM115DriverClient()
   {
@@ -187,6 +190,7 @@ namespace ddsm115_ros2_driver
 
   bool DDSM115DriverClient::send_current_command(uint8_t motor_id, double current_amps)
   {
+    last_sent_command_type_[motor_id] = 0x64;
     std::vector<uint8_t> data(10, 0x00);
     data[0] = motor_id;
     data[1] = 0x64;
@@ -202,6 +206,7 @@ namespace ddsm115_ros2_driver
 
   bool DDSM115DriverClient::send_velocity_command(uint8_t motor_id, double rpm, uint8_t acceleration, bool brake)
   {
+    last_sent_command_type_[motor_id] = 0x64;
     std::vector<uint8_t> data(10, 0x00);
     data[0] = motor_id;
     data[1] = 0x64;
@@ -219,6 +224,7 @@ namespace ddsm115_ros2_driver
 
   bool DDSM115DriverClient::send_position_command(uint8_t motor_id, double position_degrees)
   {
+    last_sent_command_type_[motor_id] = 0x64;
     std::vector<uint8_t> data(10, 0x00);
     data[0] = motor_id;
     data[1] = 0x64;
@@ -234,6 +240,7 @@ namespace ddsm115_ros2_driver
 
   bool DDSM115DriverClient::send_feedback_query(uint8_t motor_id)
   {
+    last_sent_command_type_[motor_id] = 0x74;
     std::vector<uint8_t> data(10, 0x00);
     data[0] = motor_id;
     data[1] = 0x74;
@@ -377,9 +384,22 @@ namespace ddsm115_ros2_driver
     int16_t raw_velocity = static_cast<int16_t>((packet[4] << 8) | packet[5]);
     feedback.velocity = static_cast<double>(raw_velocity);
 
-    // Parse single-turn position (mapped 0 to 32767 -> 0.0 to 360.0 degrees)
-    uint16_t raw_position = static_cast<uint16_t>((packet[6] << 8) | packet[7]);
-    feedback.position = static_cast<double>(raw_position) * (360.0 / 32767.0);
+    // Check last sent command type to parse DATA[6] and DATA[7] correctly
+    uint8_t last_cmd = last_sent_command_type_[feedback.motor_id];
+    if (last_cmd == 0x74)
+    {
+      feedback.winding_temperature = static_cast<double>(packet[6]);
+      feedback.position = static_cast<double>(packet[7]) * (360.0 / 255.0);
+      feedback.is_temperature_packet = true;
+    }
+    else
+    {
+      // Parse single-turn position (mapped 0 to 32767 -> 0.0 to 360.0 degrees)
+      uint16_t raw_position = static_cast<uint16_t>((packet[6] << 8) | packet[7]);
+      feedback.position = static_cast<double>(raw_position) * (360.0 / 32767.0);
+      feedback.winding_temperature = 0.0;
+      feedback.is_temperature_packet = false;
+    }
 
     // Parse error codes
     feedback.error_code = packet[8];
@@ -396,6 +416,7 @@ namespace ddsm115_ros2_driver
        << ", I=" << feedback.current << " A"
        << ", V=" << feedback.velocity << " RPM"
        << ", P=" << feedback.position << " Deg"
+       << ", Temp=" << feedback.winding_temperature << " C"
        << ", Err=" << static_cast<int>(feedback.error_code);
     log(LogLevel::DEBUG, ss.str());
 

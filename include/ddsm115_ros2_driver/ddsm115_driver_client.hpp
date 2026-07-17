@@ -36,6 +36,7 @@ namespace ddsm115_ros2_driver
     double current{0.0};     // Amperes
     double velocity{0.0};    // RPM
     double position{0.0};    // Degrees (0 - 360)
+    double winding_temperature{0.0}; // Celsius
     uint8_t error_code{0};   // Raw error byte
     bool over_temperature{false};
     bool voltage_fault{false};
@@ -43,6 +44,7 @@ namespace ddsm115_ros2_driver
     bool sensor_fault{false};
     bool stalling{false};
     bool init_fault{false};
+    bool is_temperature_packet{false};
   };
 
   using LogCallback = std::function<void(LogLevel, const std::string &)>;
@@ -102,6 +104,7 @@ namespace ddsm115_ros2_driver
 
     std::vector<uint8_t> registered_motor_ids_;
     std::mutex ids_mutex_;
+    std::array<uint8_t, 256> last_sent_command_type_;
   };
 } // namespace ddsm115_ros2_driver
 #endif // DDSM115_ROS2_DRIVER_DDSM115_DRIVER_CLIENT_HPP_

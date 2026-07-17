@@ -56,6 +56,8 @@ private:
   rclcpp::TimerBase::SharedPtr control_timer_;
   rclcpp::TimerBase::SharedPtr timeout_timer_;
 
+  uint32_t control_cycle_count_{0};
+
   // Keep track of motor command state
   struct MotorState
   {
