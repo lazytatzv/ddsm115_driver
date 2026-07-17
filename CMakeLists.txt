@@ -58,14 +58,16 @@ target_include_directories(ddsm115_driver_node PUBLIC
 )
 target_compile_features(ddsm115_driver_node PUBLIC cxx_std_20)
 rosidl_get_typesupport_target(cpp_typesupport_target "${PROJECT_NAME}" "rosidl_typesupport_cpp")
-target_link_libraries(ddsm115_driver_node PRIVATE
+target_link_libraries(ddsm115_driver_node
   ddsm115_driver_client
-  rclcpp::rclcpp
-  rclcpp_components::component
-  std_msgs::std_msgs_library
-  sensor_msgs::sensor_msgs_library
-  diagnostic_updater::diagnostic_updater
   "${cpp_typesupport_target}"
+)
+ament_target_dependencies(ddsm115_driver_node
+  rclcpp
+  rclcpp_components
+  std_msgs
+  sensor_msgs
+  diagnostic_updater
 )
 
 # 3. ros2_control hardware interface plugin library
@@ -77,12 +79,14 @@ target_include_directories(ddsm115_system_hardware PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 target_compile_features(ddsm115_system_hardware PUBLIC cxx_std_20)
-target_link_libraries(ddsm115_system_hardware PUBLIC
+target_link_libraries(ddsm115_system_hardware
   ddsm115_driver_client
-  rclcpp::rclcpp
-  rclcpp_lifecycle::rclcpp_lifecycle
-  hardware_interface::hardware_interface
-  pluginlib::pluginlib
+)
+ament_target_dependencies(ddsm115_system_hardware
+  rclcpp
+  rclcpp_lifecycle
+  hardware_interface
+  pluginlib
 )
 
 # Export plugin description file for ros2_control

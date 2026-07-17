@@ -247,7 +247,7 @@ void DDSM115DriverNode::check_timeouts_callback()
   }
 
   // Update diagnostics
-  diagnostic_updater_.update();
+  diagnostic_updater_.force_update();
 }
 
 void DDSM115DriverNode::setup_diagnostics()

@@ -177,8 +177,7 @@ namespace ddsm115_ros2_driver
     std::vector<uint8_t> data(10, 0x00);
     data[0] = motor_id;
     data[1] = 0xA0;
-    data[2] = static_cast<uint8_t>(mode);
-    data[9] = calc_crc8_maxim(data.data(), 9);
+    data[9] = static_cast<uint8_t>(mode);
 
     std::stringstream ss;
     ss << "Sending mode command to motor " << static_cast<int>(motor_id) << ": mode " << static_cast<int>(mode);

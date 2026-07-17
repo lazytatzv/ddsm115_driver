@@ -27,6 +27,8 @@ class DDSM115SystemHardware : public hardware_interface::SystemInterface
 public:
   RCLCPP_SHARED_PTR_DEFINITIONS(DDSM115SystemHardware)
 
+  ~DDSM115SystemHardware() override;
+
   hardware_interface::CallbackReturn on_init(
     const hardware_interface::HardwareComponentInterfaceParams & params) override;
 
@@ -57,6 +59,9 @@ private:
 
   // Pure low-level C++ serial client
   std::unique_ptr<DDSM115DriverClient> driver_client_;
+
+  std::string serial_port_;
+  int baud_rate_{115200};
 
   // ROS Node for logging only
   rclcpp::Node::SharedPtr node_;
