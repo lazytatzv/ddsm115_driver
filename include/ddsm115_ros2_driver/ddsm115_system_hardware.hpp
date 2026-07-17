@@ -1,5 +1,18 @@
-#ifndef DDSM115_ROS2_DRIVER_DDSM115_SYSTEM_HARDWARE_HPP_
-#define DDSM115_ROS2_DRIVER_DDSM115_SYSTEM_HARDWARE_HPP_
+// Copyright 2026 Tatsukiyano
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#ifndef DDSM115_ROS2_DRIVER__DDSM115_SYSTEM_HARDWARE_HPP_
+#define DDSM115_ROS2_DRIVER__DDSM115_SYSTEM_HARDWARE_HPP_
 
 #include <memory>
 #include <string>
@@ -70,15 +83,15 @@ private:
   {
     uint8_t id = 0;
     bool invert = false;
-    
+
     // Command states
-    double command_velocity = 0.0; // rad/s
-    
+    double command_velocity = 0.0;  // rad/s
+
     // Feedback states
-    double position = 0.0; // rad (continuous accumulated)
-    double velocity = 0.0; // rad/s
+    double position = 0.0;  // rad (continuous accumulated)
+    double velocity = 0.0;  // rad/s
     double effort = 0.0;   // Amperes
-    
+
     // Wrap around tracking variables
     double prev_raw_position_deg = 0.0;
     bool first_feedback = true;
@@ -98,4 +111,4 @@ private:
 
 }  // namespace ddsm115_ros2_driver
 
-#endif  // DDSM115_ROS2_DRIVER_DDSM115_SYSTEM_HARDWARE_HPP_
+#endif  // DDSM115_ROS2_DRIVER__DDSM115_SYSTEM_HARDWARE_HPP_

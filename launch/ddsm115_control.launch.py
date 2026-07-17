@@ -1,29 +1,46 @@
-import os
-from ament_index_python.packages import get_package_share_directory
+# Copyright 2026 Tatsukiyano
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Launch the ros2_control configuration for DDSM115 motors."""
+
+import tempfile
+
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-import tempfile
+
 
 def launch_setup(context, *args, **kwargs):
+    """Set up the launch nodes after resolving configurations."""
     # Retrieve parameters
-    usb_path = LaunchConfiguration("usb_path").perform(context)
-    serial_baud = LaunchConfiguration("serial_baud").perform(context)
-    motor_id_left = LaunchConfiguration("motor_id_left").perform(context)
-    motor_id_right = LaunchConfiguration("motor_id_right").perform(context)
+    usb_path = LaunchConfiguration('usb_path').perform(context)
+    serial_baud = LaunchConfiguration('serial_baud').perform(context)
+    motor_id_left = LaunchConfiguration('motor_id_left').perform(context)
+    motor_id_right = LaunchConfiguration('motor_id_right').perform(context)
 
-    # Generate a temporary URDF file containing the ros2_control description for the motors
+    # Generate a temporary URDF file containing the ros2_control description
     urdf_content = f"""<?xml version="1.0"?>
 <robot name="ddsm115_robot">
   <link name="base_link"/>
-  
+
   <joint name="left_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="left_wheel"/>
     <axis xyz="0 1 0"/>
   </joint>
-  
+
   <joint name="right_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="right_wheel"/>
@@ -78,7 +95,7 @@ diff_drive_controller:
     right_wheel_names: ["right_wheel_joint"]
     wheel_separation: 0.4
     wheel_radius: 0.0575  # DDSM115 wheel radius is ~57.5mm
-    
+
     use_stamped_vel: false
 
     # Odometry limits
@@ -95,33 +112,33 @@ diff_drive_controller:
 
     # Robot State Publisher Node
     robot_state_publisher_node = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        output="screen",
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        output='screen',
         arguments=[temp_urdf.name]
     )
 
     # Controller Manager Node
     controller_manager_node = Node(
-        package="controller_manager",
-        executable="ros2_control_node",
+        package='controller_manager',
+        executable='ros2_control_node',
         parameters=[temp_urdf.name, temp_controller_yaml.name],
-        output="screen"
+        output='screen'
     )
 
     # Spawner nodes for controllers
     joint_state_broadcaster_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
-        output="screen"
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
+        output='screen'
     )
 
     diff_drive_controller_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["diff_drive_controller", "--controller-manager", "/controller_manager"],
-        output="screen"
+        package='controller_manager',
+        executable='spawner',
+        arguments=['diff_drive_controller', '--controller-manager', '/controller_manager'],
+        output='screen'
     )
 
     return [
@@ -133,26 +150,27 @@ diff_drive_controller:
 
 
 def generate_launch_description():
+    """Generate launch description for differential drive control."""
     return LaunchDescription([
         DeclareLaunchArgument(
-            "usb_path",
-            default_value="/dev/ttyUSB0",
-            description="Path to the USB-to-RS485 interface"
+            'usb_path',
+            default_value='/dev/ttyUSB0',
+            description='Path to the USB-to-RS485 interface'
         ),
         DeclareLaunchArgument(
-            "serial_baud",
-            default_value="115200",
-            description="Baud rate for serial communication"
+            'serial_baud',
+            default_value='115200',
+            description='Baud rate for serial communication'
         ),
         DeclareLaunchArgument(
-            "motor_id_left",
-            default_value="1",
-            description="Motor ID for the left wheel"
+            'motor_id_left',
+            default_value='1',
+            description='Motor ID for the left wheel'
         ),
         DeclareLaunchArgument(
-            "motor_id_right",
-            default_value="2",
-            description="Motor ID for the right wheel"
+            'motor_id_right',
+            default_value='2',
+            description='Motor ID for the right wheel'
         ),
         OpaqueFunction(function=launch_setup)
     ])

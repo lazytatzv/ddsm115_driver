@@ -1,5 +1,18 @@
-#ifndef DDSM115_ROS2_DRIVER_DDSM115_DRIVER_NODE_HPP_
-#define DDSM115_ROS2_DRIVER_DDSM115_DRIVER_NODE_HPP_
+// Copyright 2026 Tatsukiyano
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+#ifndef DDSM115_ROS2_DRIVER__DDSM115_DRIVER_NODE_HPP_
+#define DDSM115_ROS2_DRIVER__DDSM115_DRIVER_NODE_HPP_
 
 #include <memory>
 #include <string>
@@ -28,7 +41,9 @@ private:
   void motor_feedback_callback(const MotorFeedback & feedback);
 
   // Subscriber callbacks
-  void topic_callback(const ddsm115_ros2_driver::msg::Ddsm115Command::SharedPtr msg, uint8_t motor_id);
+  void topic_callback(
+    const ddsm115_ros2_driver::msg::Ddsm115Command::SharedPtr msg,
+    uint8_t motor_id);
 
   // Timer callbacks
   void control_timer_callback();
@@ -49,8 +64,10 @@ private:
   std::vector<int64_t> motor_ids_;
 
   // ROS 2 publishers and subscribers
-  std::map<uint8_t, rclcpp::Publisher<ddsm115_ros2_driver::msg::Ddsm115Status>::SharedPtr> status_pubs_;
-  std::map<uint8_t, rclcpp::Subscription<ddsm115_ros2_driver::msg::Ddsm115Command>::SharedPtr> command_subs_;
+  std::map<uint8_t,
+    rclcpp::Publisher<ddsm115_ros2_driver::msg::Ddsm115Status>::SharedPtr> status_pubs_;
+  std::map<uint8_t,
+    rclcpp::Subscription<ddsm115_ros2_driver::msg::Ddsm115Command>::SharedPtr> command_subs_;
 
   // Timers
   rclcpp::TimerBase::SharedPtr control_timer_;
@@ -80,4 +97,4 @@ private:
 
 }  // namespace ddsm115_ros2_driver
 
-#endif  // DDSM115_ROS2_DRIVER_DDSM115_DRIVER_NODE_HPP_
+#endif  // DDSM115_ROS2_DRIVER__DDSM115_DRIVER_NODE_HPP_
