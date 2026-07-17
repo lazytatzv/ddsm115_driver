@@ -8,8 +8,17 @@ on:
 
 jobs:
   ros_ci:
-    name: Build & Test on ROS 2 Jazzy
-    runs-on: ubuntu-latest
+    name: Build & Test on ROS 2 ${{ matrix.ros_distro }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ros_distro: [humble, jazzy]
+        include:
+          - ros_distro: humble
+            os: ubuntu-22.04
+          - ros_distro: jazzy
+            os: ubuntu-24.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -17,10 +26,10 @@ jobs:
       - name: Setup ROS 2 Environment
         uses: ros-tooling/setup-ros@v0.7
         with:
-          required-ros-distributions: jazzy
+          required-ros-distributions: ${{ matrix.ros_distro }}
 
       - name: Build and Test ROS 2 Package
         uses: ros-tooling/action-ros-ci@v0.3
         with:
           package-name: ddsm115_ros2_driver
-          target-ros2-distro: jazzy
+          target-ros2-distro: ${{ matrix.ros_distro }}

@@ -30,6 +30,16 @@ DDSM115SystemHardware::~DDSM115SystemHardware()
   on_cleanup(rclcpp_lifecycle::State());
 }
 
+#ifdef ROS_DISTRO_HUMBLE
+hardware_interface::CallbackReturn DDSM115SystemHardware::on_init(
+  const hardware_interface::HardwareInfo & info)
+{
+  if (hardware_interface::SystemInterface::on_init(info) !=
+    hardware_interface::CallbackReturn::SUCCESS)
+  {
+    return hardware_interface::CallbackReturn::ERROR;
+  }
+#else
 hardware_interface::CallbackReturn DDSM115SystemHardware::on_init(
   const hardware_interface::HardwareComponentInterfaceParams & params)
 {
@@ -38,6 +48,7 @@ hardware_interface::CallbackReturn DDSM115SystemHardware::on_init(
   {
     return hardware_interface::CallbackReturn::ERROR;
   }
+#endif
 
   node_ = std::make_shared<rclcpp::Node>("ddsm115_hardware_interface_node");
   RCLCPP_INFO(node_->get_logger(), "Initializing DDSM115 System Hardware...");

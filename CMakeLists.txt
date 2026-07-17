@@ -22,6 +22,13 @@ if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
 
+# Detect ROS 2 distribution
+if("$ENV{ROS_DISTRO}" STREQUAL "humble")
+  add_compile_definitions(ROS_DISTRO_HUMBLE)
+elseif("$ENV{ROS_DISTRO}" STREQUAL "jazzy")
+  add_compile_definitions(ROS_DISTRO_JAZZY)
+endif()
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -83,6 +90,29 @@ ament_target_dependencies(ddsm115_driver_node
   diagnostic_updater
 )
 
+# 2.1 Standalone ROS 2 Lifecycle Node executable
+add_executable(ddsm115_lifecycle_driver_node
+  src/ddsm115_lifecycle_driver_node.cpp
+  src/ddsm115_lifecycle_driver_node_main.cpp
+)
+target_include_directories(ddsm115_lifecycle_driver_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_compile_features(ddsm115_lifecycle_driver_node PUBLIC cxx_std_20)
+rosidl_get_typesupport_target(cpp_typesupport_target_lc "${PROJECT_NAME}" "rosidl_typesupport_cpp")
+target_link_libraries(ddsm115_lifecycle_driver_node
+  ddsm115_driver_client
+  "${cpp_typesupport_target_lc}"
+)
+ament_target_dependencies(ddsm115_lifecycle_driver_node
+  rclcpp
+  rclcpp_lifecycle
+  std_msgs
+  sensor_msgs
+  diagnostic_updater
+)
+
 # 3. ros2_control hardware interface plugin library
 add_library(ddsm115_system_hardware SHARED
   src/ddsm115_system_hardware.cpp
@@ -109,6 +139,7 @@ pluginlib_export_plugin_description_file(hardware_interface ddsm115_hardware.xml
 install(TARGETS
   ddsm115_driver_client
   ddsm115_driver_node
+  ddsm115_lifecycle_driver_node
   ddsm115_system_hardware
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib

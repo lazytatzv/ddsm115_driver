@@ -42,8 +42,13 @@ public:
 
   ~DDSM115SystemHardware() override;
 
+#ifdef ROS_DISTRO_HUMBLE
+  hardware_interface::CallbackReturn on_init(
+    const hardware_interface::HardwareInfo & info) override;
+#else
   hardware_interface::CallbackReturn on_init(
     const hardware_interface::HardwareComponentInterfaceParams & params) override;
+#endif
 
   hardware_interface::CallbackReturn on_configure(
     const rclcpp_lifecycle::State & previous_state) override;
