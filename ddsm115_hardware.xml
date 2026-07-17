@@ -1,0 +1,9 @@
+<library path="ddsm115_system_hardware">
+  <class name="ddsm115_ros2_driver/DDSM115SystemHardware"
+         type="ddsm115_ros2_driver::DDSM115SystemHardware"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ros2_control Hardware Interface for Waveshare DDSM115 Direct Drive Servo Motors.
+    </description>
+  </class>
+</library>

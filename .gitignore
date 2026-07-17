@@ -1,0 +1,17 @@
+# CMake build output
+build/
+install/
+log/
+.ccache/
+
+# Python compiled files
+__pycache__/
+*.pyc
+
+# IDE configs
+.vscode/
+.idea/
+
+# Editor temp files
+*~
+*.swp

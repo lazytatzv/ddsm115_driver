@@ -1,0 +1,33 @@
+# Standalone DDSM115 Driver Node Configuration
+ddsm115_driver_node:
+  ros__parameters:
+    serial_port: "/dev/ttyUSB0"
+    serial_baud: 115200
+    publish_rate: 20.0        # Rate at which commands are sent and status published (Hz)
+    command_timeout: 1.0       # Timeout in seconds to stop motors if no commands are received
+    motor_ids: [1, 2]          # List of motor IDs connected on the RS485 bus
+
+# --- Reference for ros2_control URDF Hardware Interface tag setup ---
+# <ros2_control name="DDSM115Hardware" type="system">
+#   <hardware>
+#     <plugin>ddsm115_ros2_driver/DDSM115SystemHardware</plugin>
+#     <param name="usb_path">/dev/ttyUSB0</param>
+#     <param name="serial_baud">115200</param>
+#   </hardware>
+#   <joint name="left_wheel_joint">
+#     <command_interface name="velocity"/>
+#     <state_interface name="position"/>
+#     <state_interface name="velocity"/>
+#     <state_interface name="effort"/>
+#     <param name="motor_id">1</param>
+#     <param name="invert_direction">false</param>
+#   </joint>
+#   <joint name="right_wheel_joint">
+#     <command_interface name="velocity"/>
+#     <state_interface name="position"/>
+#     <state_interface name="velocity"/>
+#     <state_interface name="effort"/>
+#     <param name="motor_id">2</param>
+#     <param name="invert_direction">true</param>
+#   </joint>
+# </ros2_control>
