@@ -18,7 +18,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <mutex>
 #include <chrono>
 
 #include "rclcpp/rclcpp.hpp"
@@ -26,6 +25,7 @@
 #include "ddsm115_ros2_driver/msg/ddsm115_command.hpp"
 #include "ddsm115_ros2_driver/msg/ddsm115_status.hpp"
 #include "ddsm115_ros2_driver/ddsm115_driver_client.hpp"
+#include "ddsm115_ros2_driver/ddsm115_node_handler.hpp"
 
 namespace ddsm115_ros2_driver
 {
@@ -53,8 +53,9 @@ private:
   void setup_diagnostics();
   void produce_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat);
 
-  // Driver client
-  std::unique_ptr<DDSM115DriverClient> driver_client_;
+  // Driver client & handler
+  std::shared_ptr<DDSM115DriverClient> driver_client_;
+  std::unique_ptr<DDSM115NodeHandler> handler_;
 
   // Parameters
   std::string serial_port_;
@@ -64,36 +65,14 @@ private:
   std::vector<int64_t> motor_ids_;
 
   // ROS 2 publishers and subscribers
-  std::map<uint8_t,
-    rclcpp::Publisher<ddsm115_ros2_driver::msg::Ddsm115Status>::SharedPtr> status_pubs_;
-  std::map<uint8_t,
-    rclcpp::Subscription<ddsm115_ros2_driver::msg::Ddsm115Command>::SharedPtr> command_subs_;
+  std::map<uint8_t, rclcpp::Publisher<ddsm115_ros2_driver::msg::Ddsm115Status>::SharedPtr> status_pubs_;
+  std::map<uint8_t, rclcpp::Subscription<ddsm115_ros2_driver::msg::Ddsm115Command>::SharedPtr> command_subs_;
 
   // Timers
   rclcpp::TimerBase::SharedPtr control_timer_;
   rclcpp::TimerBase::SharedPtr timeout_timer_;
 
-  uint32_t control_cycle_count_{0};
-
-  // Keep track of motor command state
-  struct MotorState
-  {
-    ddsm115_ros2_driver::msg::Ddsm115Command last_cmd;
-    rclcpp::Time last_cmd_time;
-    ddsm115_ros2_driver::msg::Ddsm115Status last_status;
-    bool has_status = false;
-    bool timed_out = true;
-    uint8_t active_mode = ddsm115_ros2_driver::msg::Ddsm115Command::MODE_VELOCITY;
-  };
-
-  std::map<uint8_t, MotorState> motor_states_;
-  std::mutex state_mutex_;
-
-  // Diagnostic statistics
   diagnostic_updater::Updater diagnostic_updater_;
-  std::atomic<uint64_t> total_rx_packets_{0};
-  std::atomic<uint64_t> total_tx_packets_{0};
-  std::atomic<uint64_t> crc_errors_{0};
 };
 
 }  // namespace ddsm115_ros2_driver

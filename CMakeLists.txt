@@ -71,6 +71,7 @@ target_link_libraries(ddsm115_driver_client PUBLIC
 add_executable(ddsm115_driver_node
   src/ddsm115_driver_node.cpp
   src/ddsm115_driver_node_main.cpp
+  src/ddsm115_node_handler.cpp
 )
 target_include_directories(ddsm115_driver_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -94,6 +95,7 @@ ament_target_dependencies(ddsm115_driver_node
 add_executable(ddsm115_lifecycle_driver_node
   src/ddsm115_lifecycle_driver_node.cpp
   src/ddsm115_lifecycle_driver_node_main.cpp
+  src/ddsm115_node_handler.cpp
 )
 target_include_directories(ddsm115_lifecycle_driver_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
