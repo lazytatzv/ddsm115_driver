@@ -95,7 +95,7 @@ public:
   void unregister_motor_id(uint8_t motor_id);
   void clear_registered_motor_ids();
 
-private:
+protected:
   void start_async_read();
   void parse_buffer();
   void process_feedback_packet(const std::vector<uint8_t> & packet);
@@ -103,6 +103,7 @@ private:
   bool write_packet(const std::vector<uint8_t> & packet);
   bool is_valid_motor_id(uint8_t motor_id) const;
 
+private:
   std::string port_name_;
   int baud_rate_;
   boost::asio::io_context io_context_;

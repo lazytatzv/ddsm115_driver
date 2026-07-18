@@ -156,9 +156,9 @@ C++20 BNO055-style serial library and ROS 2 package for Waveshare DDSM115 direct
 
 For advanced setup and detailed guides, see the files located in the `docs` directory:
 
-* [index.rst](file:///home/yano/ddsm115_ros2_driver_pro/docs/index.rst): Documentation home page.
-* [installation.rst](file:///home/yano/ddsm115_ros2_driver_pro/docs/installation.rst): Building and package dependencies.
-* [usage.rst](file:///home/yano/ddsm115_ros2_driver_pro/docs/usage.rst): Hardware wiring, configuration parameters, and control modes.
+* `docs/index.rst`: Documentation home page.
+* `docs/installation.rst`: Building and package dependencies.
+* `docs/usage.rst`: Hardware wiring, configuration parameters, and control modes.
 
 ---
 
