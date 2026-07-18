@@ -176,6 +176,13 @@ For advanced setup and detailed guides, see the files located in the `docs` dire
     *   Pin 1 (Red) ➔ VCC (12V–24V DC, 18V recommended)
     *   Pin 2 (Black) ➔ GND
 
+> [!NOTE]
+> **Using the Waveshare DDSM Driver HAT (A)**
+> 
+> If you are using the official Waveshare DDSM Driver HAT (A), you already have a built-in USB-to-RS485 converter. Simply plug the motors into the onboard ports and connect the HAT's Type-C port to your PC. 
+> 
+> **CRITICAL STEP**: The Driver HAT features an onboard ESP32 designed for JSON communication. However, this ROS 2 driver communicates using raw, high-speed RS485 hex packets. You must toggle the **"Serial Port Control Switch"** on the HAT **AWAY from the "ESP32" position**. This bypasses the ESP32 and directly bridges the Type-C USB port to the RS485 transceiver, allowing the ROS 2 driver to communicate over `/dev/ttyUSB0` transparently.
+
 ### 2. Permissions
 
 Add your Linux user to the `dialout` group to access serial ports without using sudo:

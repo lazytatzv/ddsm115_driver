@@ -24,6 +24,14 @@ Hardware Connection
    * DDSM115 ``GND`` (Black) ➔ RS485 ``GND`` (highly recommended to connect signal grounds to reduce serial noise)
 2. Connect a DC power supply (rated 12V to 24V, rated 18V DC is standard, 6A minimum recommended).
 
+.. note::
+   **Using the Waveshare DDSM Driver HAT (A)**
+   
+   If you are using the official Waveshare DDSM Driver HAT (A), you do not need a separate USB-to-RS485 converter. 
+   Simply connect the motor directly to the onboard motor interfaces and connect the HAT to your PC via the USB Type-C cable. 
+   
+   **CRITICAL STEP**: The DDSM Driver HAT (A) has an onboard ESP32 that defaults to expecting JSON commands. To use this ROS 2 driver (which relies on raw, fast RS485 packets), you must **bypass the ESP32**. Make sure the onboard "Serial Port Control Switch" is toggled **AWAY** from the "ESP32" position and into the direct USB/RS485 bypass mode. The driver will then seamlessly communicate with the motors via ``/dev/ttyUSB0``.
+
 Motor ID Configuration
 ----------------------
 
