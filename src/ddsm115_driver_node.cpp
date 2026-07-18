@@ -26,12 +26,21 @@ DDSM115DriverNode::DDSM115DriverNode(const rclcpp::NodeOptions & options)
   this->declare_parameter<double>("publish_rate", 20.0);
   this->declare_parameter<double>("command_timeout", 1.0);
   this->declare_parameter<std::vector<int64_t>>("motor_ids", std::vector<int64_t>{1});
+  this->declare_parameter<std::vector<std::string>>("joint_names", std::vector<std::string>{""});
 
   serial_port_ = this->get_parameter("serial_port").as_string();
   baud_rate_ = this->get_parameter("serial_baud").as_int();
   publish_rate_ = this->get_parameter("publish_rate").as_double();
   command_timeout_ = this->get_parameter("command_timeout").as_double();
   motor_ids_ = this->get_parameter("motor_ids").as_integer_array();
+  joint_names_param_ = this->get_parameter("joint_names").as_string_array();
+
+  if (joint_names_param_.size() == motor_ids_.size() && !joint_names_param_.empty() && joint_names_param_[0] != "") {
+    for (size_t i = 0; i < motor_ids_.size(); ++i) {
+      joint_names_[static_cast<uint8_t>(motor_ids_[i])] = joint_names_param_[i];
+    }
+    joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+  }
 
   driver_client_ = std::make_shared<DDSM115DriverClient>(
     std::bind(&DDSM115DriverNode::motor_feedback_callback, this, std::placeholders::_1),
@@ -116,6 +125,13 @@ void DDSM115DriverNode::control_timer_callback()
 {
   if (handler_) {
     handler_->execute_control_cycle();
+    
+    if (joint_state_pub_) {
+      sensor_msgs::msg::JointState js_msg;
+      if (handler_->get_joint_state(js_msg, joint_names_, this->now())) {
+        joint_state_pub_->publish(js_msg);
+      }
+    }
   }
 }
 

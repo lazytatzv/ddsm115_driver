@@ -14,6 +14,7 @@
 
 #include "ddsm115_ros2_driver/ddsm115_node_handler.hpp"
 
+#include <cmath>
 #include <chrono>
 #include <thread>
 #include <vector>
@@ -72,6 +73,23 @@ bool DDSM115NodeHandler::process_feedback(
   } else {
     out_status_msg.position = feedback.position;
     out_status_msg.winding_temperature = state.has_status ? state.last_status.winding_temperature : 0.0;
+    
+    // Track continuous position
+    if (state.first_feedback) {
+      state.prev_raw_position_deg = feedback.position;
+      state.first_feedback = false;
+    }
+    double diff = feedback.position - state.prev_raw_position_deg;
+    if (diff < -180.0) {
+      state.wrap_count++;
+    } else if (diff > 180.0) {
+      state.wrap_count--;
+    }
+    state.prev_raw_position_deg = feedback.position;
+    
+    double accumulated_deg = feedback.position + static_cast<double>(state.wrap_count) * 360.0;
+    state.continuous_position_rad = accumulated_deg * (M_PI / 180.0);
+    state.velocity_rad_s = feedback.velocity * (2.0 * M_PI / 60.0);
   }
 
   state.last_status = out_status_msg;
@@ -233,6 +251,37 @@ void DDSM115NodeHandler::produce_diagnostics(diagnostic_updater::DiagnosticStatu
       }
     }
   }
+}
+
+bool DDSM115NodeHandler::get_joint_state(
+  sensor_msgs::msg::JointState & msg,
+  const std::map<uint8_t, std::string> & joint_names,
+  rclcpp::Time now)
+{
+  std::lock_guard<std::mutex> lock(state_mutex_);
+  msg.header.stamp = now;
+  msg.name.clear();
+  msg.position.clear();
+  msg.velocity.clear();
+  msg.effort.clear();
+
+  for (const auto & pair : joint_names) {
+    uint8_t id = pair.first;
+    if (motor_states_.count(id) > 0) {
+      const auto & state = motor_states_[id];
+      msg.name.push_back(pair.second);
+      if (state.has_status && !state.first_feedback) {
+        msg.position.push_back(state.continuous_position_rad);
+        msg.velocity.push_back(state.velocity_rad_s);
+        msg.effort.push_back(state.last_status.current);
+      } else {
+        msg.position.push_back(0.0);
+        msg.velocity.push_back(0.0);
+        msg.effort.push_back(0.0);
+      }
+    }
+  }
+  return !msg.name.empty();
 }
 
 }  // namespace ddsm115_ros2_driver

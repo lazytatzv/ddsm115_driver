@@ -22,6 +22,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "diagnostic_updater/diagnostic_updater.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 #include "ddsm115_ros2_driver/msg/ddsm115_command.hpp"
 #include "ddsm115_ros2_driver/msg/ddsm115_status.hpp"
 #include "ddsm115_ros2_driver/ddsm115_driver_client.hpp"
@@ -63,10 +64,13 @@ private:
   double publish_rate_;
   double command_timeout_;
   std::vector<int64_t> motor_ids_;
+  std::vector<std::string> joint_names_param_;
+  std::map<uint8_t, std::string> joint_names_;
 
   // ROS 2 publishers and subscribers
   std::map<uint8_t, rclcpp::Publisher<ddsm115_ros2_driver::msg::Ddsm115Status>::SharedPtr> status_pubs_;
   std::map<uint8_t, rclcpp::Subscription<ddsm115_ros2_driver::msg::Ddsm115Command>::SharedPtr> command_subs_;
+  rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_state_pub_;
 
   // Timers
   rclcpp::TimerBase::SharedPtr control_timer_;

@@ -29,6 +29,7 @@ DDSM115LifecycleDriverNode::DDSM115LifecycleDriverNode(const rclcpp::NodeOptions
   this->declare_parameter("serial_port", "/dev/ttyUSB0");
   this->declare_parameter("baud_rate", 115200);
   this->declare_parameter("motor_ids", std::vector<int64_t>{1, 2});
+  this->declare_parameter("joint_names", std::vector<std::string>{"", ""});
   this->declare_parameter("publish_rate", 20.0);
   this->declare_parameter("command_timeout", 1.0);
 }
@@ -48,12 +49,19 @@ DDSM115LifecycleDriverNode::on_configure(const rclcpp_lifecycle::State &)
   serial_port_ = this->get_parameter("serial_port").as_string();
   baud_rate_ = this->get_parameter("baud_rate").as_int();
   motor_ids_ = this->get_parameter("motor_ids").as_integer_array();
+  joint_names_param_ = this->get_parameter("joint_names").as_string_array();
   publish_rate_ = this->get_parameter("publish_rate").as_double();
   command_timeout_ = this->get_parameter("command_timeout").as_double();
 
   if (motor_ids_.empty()) {
     RCLCPP_ERROR(this->get_logger(), "Parameter 'motor_ids' is empty. At least one ID required.");
     return rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn::FAILURE;
+  }
+  
+  if (joint_names_param_.size() == motor_ids_.size() && !joint_names_param_.empty() && joint_names_param_[0] != "") {
+    for (size_t i = 0; i < motor_ids_.size(); ++i) {
+      joint_names_[static_cast<uint8_t>(motor_ids_[i])] = joint_names_param_[i];
+    }
   }
 
   driver_client_ = std::make_shared<DDSM115DriverClient>(
@@ -119,6 +127,11 @@ DDSM115LifecycleDriverNode::on_activate(const rclcpp_lifecycle::State &)
         this->topic_callback(msg, id);
       });
   }
+  
+  if (!joint_names_.empty()) {
+    joint_state_pub_ = this->create_publisher<sensor_msgs::msg::JointState>("joint_states", 10);
+    joint_state_pub_->on_activate();
+  }
 
   for (auto & pair : status_pubs_) {
     pair.second->on_activate();
@@ -152,6 +165,10 @@ DDSM115LifecycleDriverNode::on_deactivate(const rclcpp_lifecycle::State &)
 
   for (auto & pair : status_pubs_) {
     pair.second->on_deactivate();
+  }
+  
+  if (joint_state_pub_) {
+    joint_state_pub_->on_deactivate();
   }
 
   for (int64_t motor_id : motor_ids_) {
@@ -216,6 +233,13 @@ void DDSM115LifecycleDriverNode::control_timer_callback()
 {
   if (handler_) {
     handler_->execute_control_cycle();
+    
+    if (joint_state_pub_ && joint_state_pub_->is_activated()) {
+      sensor_msgs::msg::JointState js_msg;
+      if (handler_->get_joint_state(js_msg, joint_names_, this->now())) {
+        joint_state_pub_->publish(js_msg);
+      }
+    }
   }
 }
 

@@ -22,6 +22,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "diagnostic_updater/diagnostic_updater.hpp"
+#include "sensor_msgs/msg/joint_state.hpp"
 #include "ddsm115_ros2_driver/msg/ddsm115_command.hpp"
 #include "ddsm115_ros2_driver/msg/ddsm115_status.hpp"
 #include "ddsm115_ros2_driver/ddsm115_driver_client.hpp"
@@ -37,6 +38,12 @@ struct MotorState
   bool has_status{false};
   bool timed_out{true};
   uint8_t active_mode{ddsm115_ros2_driver::msg::Ddsm115Command::MODE_VELOCITY};
+
+  bool first_feedback{true};
+  double prev_raw_position_deg{0.0};
+  int64_t wrap_count{0};
+  double continuous_position_rad{0.0};
+  double velocity_rad_s{0.0};
 };
 
 class DDSM115NodeHandler
@@ -69,6 +76,12 @@ public:
 
   // Fill diagnostic data for all motors
   void produce_diagnostics(diagnostic_updater::DiagnosticStatusWrapper & stat);
+  
+  // Fill JointState message
+  bool get_joint_state(
+    sensor_msgs::msg::JointState & msg,
+    const std::map<uint8_t, std::string> & joint_names,
+    rclcpp::Time now);
   
   // Track packets
   void increment_rx() { total_rx_packets_++; }
