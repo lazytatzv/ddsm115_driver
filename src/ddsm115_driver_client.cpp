@@ -228,9 +228,9 @@ bool DDSM115DriverClient::send_position_command(uint8_t motor_id, double positio
   data[0] = motor_id;
   data[1] = 0x64;
 
-    // Map position (0.0 to 360.0 degrees) to (-32767 to 32767) where 180 is 0.
-  int16_t mapped_val = static_cast<int16_t>(std::clamp(std::round((position_degrees - 180.0) *
-    (32767.0 / 180.0)), -32767.0, 32767.0));
+    // Map position (0.0 to 360.0 degrees) to (0 to 32767)
+  uint16_t mapped_val = static_cast<uint16_t>(std::clamp(std::round(position_degrees *
+    (32767.0 / 360.0)), 0.0, 32767.0));
   data[2] = static_cast<uint8_t>((mapped_val >> 8) & 0xFF);
   data[3] = static_cast<uint8_t>(mapped_val & 0xFF);
   data[9] = calc_crc8_maxim(data.data(), 9);
@@ -244,6 +244,16 @@ bool DDSM115DriverClient::send_feedback_query(uint8_t motor_id)
   std::vector<uint8_t> data(10, 0x00);
   data[0] = motor_id;
   data[1] = 0x74;
+  data[9] = calc_crc8_maxim(data.data(), 9);
+
+  return write_packet(data);
+}
+
+bool DDSM115DriverClient::query_motor_id()
+{
+  std::vector<uint8_t> data(10, 0x00);
+  data[0] = 0xC8;
+  data[1] = 0x64;
   data[9] = calc_crc8_maxim(data.data(), 9);
 
   return write_packet(data);
@@ -392,12 +402,11 @@ void DDSM115DriverClient::process_feedback_packet(const std::vector<uint8_t> & p
 
     // Parse error codes
   feedback.error_code = packet[8];
-  feedback.over_temperature = (feedback.error_code & 0x01) != 0;
-  feedback.voltage_fault = (feedback.error_code & 0x02) != 0;
-  feedback.over_current = (feedback.error_code & 0x04) != 0;
-  feedback.sensor_fault = (feedback.error_code & 0x08) != 0;
-  feedback.stalling = (feedback.error_code & 0x10) != 0;
-  feedback.init_fault = (feedback.error_code & 0x20) != 0;
+  feedback.sensor_fault = (feedback.error_code & 0x01) != 0;
+  feedback.over_current = (feedback.error_code & 0x02) != 0;
+  feedback.phase_over_current = (feedback.error_code & 0x04) != 0;
+  feedback.stalling = (feedback.error_code & 0x08) != 0;
+  feedback.troubleshooting = (feedback.error_code & 0x10) != 0;
 
   std::stringstream ss;
   ss   << "Feedback parsed for motor " << static_cast<int>(feedback.motor_id)

@@ -209,6 +209,8 @@ void DDSM115DriverNode::control_timer_callback()
         is_timed_out = motor_states_[id].timed_out;
       }
     }
+    
+    uint8_t current_active_mode = motor_states_[id].active_mode;
 
     if (request_temp) {
       // Periodically query the winding temperature
@@ -218,6 +220,14 @@ void DDSM115DriverNode::control_timer_callback()
       driver_client_->send_velocity_command(id, 0.0, 0, true);
     } else {
       total_tx_packets_++;
+      
+      if (cmd.mode != current_active_mode) {
+        // Send mode switch command if mode has changed
+        driver_client_->send_mode_command(id, static_cast<ControlLoopModes>(cmd.mode));
+        motor_states_[id].active_mode = cmd.mode;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+      }
+      
       switch (cmd.mode) {
         case ddsm115_ros2_driver::msg::Ddsm115Command::MODE_CURRENT:
           driver_client_->send_current_command(id, cmd.value);
@@ -317,7 +327,25 @@ void DDSM115DriverNode::produce_diagnostics(diagnostic_updater::DiagnosticStatus
         stat.add(key_prefix + " Status Feedback Position (Deg)", state.last_status.position);
         stat.add(key_prefix + " Status Feedback Winding Temperature (C)",
             state.last_status.winding_temperature);
-        stat.add(key_prefix + " Status Error Code", static_cast<int>(state.last_status.error_code));
+        stat.add(key_prefix + " Status Error Code Raw", static_cast<int>(state.last_status.error_code));
+        std::string error_str = "OK";
+        if (state.last_status.error_code != 0) {
+          std::vector<std::string> errs;
+          if (state.last_status.error_code & 0x01) errs.push_back("Sensor Fault");
+          if (state.last_status.error_code & 0x02) errs.push_back("Over Current");
+          if (state.last_status.error_code & 0x04) errs.push_back("Phase Over Current");
+          if (state.last_status.error_code & 0x08) errs.push_back("Stall");
+          if (state.last_status.error_code & 0x10) errs.push_back("Troubleshooting");
+          if (!errs.empty()) {
+            error_str = "";
+            for (size_t i = 0; i < errs.size(); ++i) {
+              error_str += errs[i] + (i < errs.size() - 1 ? " | " : "");
+            }
+          } else {
+            error_str = "Unknown Error";
+          }
+        }
+        stat.add(key_prefix + " Status Error Summary", error_str);
       } else {
         stat.add(key_prefix + " Status Feedback", "NO FEEDBACK RECEIVED");
       }

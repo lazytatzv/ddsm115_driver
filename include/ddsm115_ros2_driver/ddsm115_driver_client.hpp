@@ -52,12 +52,11 @@ struct MotorFeedback
   double position{0.0};      // Degrees (0 - 360)
   double winding_temperature{0.0};   // Celsius
   uint8_t error_code{0};     // Raw error byte
-  bool over_temperature{false};
-  bool voltage_fault{false};
-  bool over_current{false};
   bool sensor_fault{false};
+  bool over_current{false};
+  bool phase_over_current{false};
   bool stalling{false};
-  bool init_fault{false};
+  bool troubleshooting{false};
   bool is_temperature_packet{false};
 };
 
@@ -85,6 +84,7 @@ public:
     bool brake = false);
   bool send_position_command(uint8_t motor_id, double position_degrees);
   bool send_feedback_query(uint8_t motor_id);
+  bool query_motor_id();
   bool change_motor_id(uint8_t current_id, uint8_t new_id);
 
     // CRC helper

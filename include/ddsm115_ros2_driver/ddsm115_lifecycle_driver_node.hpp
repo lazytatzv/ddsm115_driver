@@ -95,6 +95,7 @@ private:
     rclcpp::Time last_cmd_time{0, 0, RCL_ROS_TIME};
     bool has_status{false};
     bool timed_out{true};
+    uint8_t active_mode = ddsm115_ros2_driver::msg::Ddsm115Command::MODE_VELOCITY;
   };
 
   std::map<uint8_t, MotorState> motor_states_;

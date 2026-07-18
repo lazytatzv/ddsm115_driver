@@ -83,6 +83,7 @@ private:
     ddsm115_ros2_driver::msg::Ddsm115Status last_status;
     bool has_status = false;
     bool timed_out = true;
+    uint8_t active_mode = ddsm115_ros2_driver::msg::Ddsm115Command::MODE_VELOCITY;
   };
 
   std::map<uint8_t, MotorState> motor_states_;
